@@ -1,5 +1,5 @@
 const { Client, GatewayIntentBits, EmbedBuilder } = require('discord.js');
-const axios = require('axios'); // Asegúrate de tener axios en tu package.json
+const axios = require('axios');
 
 const client = new Client({
     intents: [
@@ -9,12 +9,13 @@ const client = new Client({
     ]
 });
 
-// --- CONFIGURACIÓN SEGURA PARA RENDER ---
+// --- CONFIGURACIÓN SEGURA ---
+// Estos valores los leerá directamente desde las variables de entorno de Render
 const TOKEN = process.env.TOKEN;
 const API_KEY = process.env.API_KEY || '123456';
 const BASE_URL_PHP = 'https://granturismols.byethost9.com/api_bot.php';
 
-// Configuración para engañar al firewall de ByetHost
+// Configuración de cabeceras para engañar al firewall de ByetHost
 const axiosConfig = {
     headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -32,6 +33,7 @@ client.on('messageCreate', async (message) => {
     // COMANDO !tabla
     if (message.content === '!tabla') {
         try {
+            console.log("Solicitando tabla de posiciones...");
             const response = await axios.get(`${BASE_URL_PHP}?action=get_tabla&api_key=${API_KEY}`, axiosConfig);
             const data = response.data;
 
@@ -39,7 +41,8 @@ client.on('messageCreate', async (message) => {
                 const embed = new EmbedBuilder()
                     .setTitle('🏆 Clasificación GT Latam Series - Temporada 5')
                     .setColor('#FF0000')
-                    .setTimestamp();
+                    .setTimestamp()
+                    .setFooter({ text: 'Gran Turismo Latam Series' });
 
                 let descripcion = "";
                 data.data.forEach((piloto, index) => {
@@ -49,11 +52,11 @@ client.on('messageCreate', async (message) => {
                 embed.setDescription(descripcion);
                 message.reply({ embeds: [embed] });
             } else {
-                message.reply('❌ No hay datos disponibles en la tabla de la liga.');
+                message.reply('❌ No hay datos disponibles o el servidor está saturado.');
             }
         } catch (error) {
-            console.error('Error en !tabla:', error);
-            message.reply('⚠️ Error al conectar con el servidor de la liga.');
+            console.error('Error en !tabla:', error.message);
+            message.reply('⚠️ Error al conectar con la base de datos.');
         }
     }
 
@@ -73,14 +76,15 @@ client.on('messageCreate', async (message) => {
                         { name: 'Victorias', value: `${p.victorias}`, inline: true },
                         { name: 'Podios', value: `${p.podios}`, inline: true }
                     )
-                    .setColor('#0099ff');
+                    .setColor('#0099ff')
+                    .setFooter({ text: 'GT Latam Series' });
 
                 message.reply({ embeds: [embed] });
             } else {
-                message.reply(`❌ No se encontró al piloto: ${nombrePiloto}`);
+                message.reply(`❌ Piloto no encontrado o error de conexión.`);
             }
         } catch (error) {
-            console.error('Error en !perfil:', error);
+            console.error('Error en !perfil:', error.message);
             message.reply('⚠️ Error al buscar los datos del piloto.');
         }
     }
