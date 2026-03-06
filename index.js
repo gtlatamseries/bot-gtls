@@ -13,7 +13,7 @@ const client = new Client({
 // Estos valores los leerá directamente desde las variables de entorno de Render
 const TOKEN = process.env.TOKEN;
 const API_KEY = process.env.API_KEY || '123456';
-const BASE_URL_PHP = 'https://granturismols.byethost9.com/api_bot.php';
+const url = "http://gtlatamseries.gt.tc/api_bot.php?action=get_tabla&api_key=123456";
 
 // Configuración de cabeceras para engañar al firewall de ByetHost
 const axiosConfig = {
@@ -91,3 +91,4 @@ client.on('messageCreate', async (message) => {
 });
 
 client.login(TOKEN);
+
