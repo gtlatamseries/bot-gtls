@@ -13,7 +13,7 @@ const client = new Client({
 // --- CONFIGURACIÓN ---
 const TOKEN = process.env.TOKEN;
 const API_KEY = '123456'; 
-const BASE_URL_PHP = 'http://granturismols.byethost9.com/api_bot.php';
+const BASE_URL_PHP = 'https://granturismols.byethost9.com/api_bot.php';
 
 const axiosConfig = {
     headers: { 
@@ -89,3 +89,4 @@ client.on('messageCreate', async (message) => {
 
 
 client.login(TOKEN);
+
