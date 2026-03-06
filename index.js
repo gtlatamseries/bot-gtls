@@ -1,92 +1,89 @@
-console.log("Intentando encender el bot...");
 const { Client, GatewayIntentBits, EmbedBuilder } = require('discord.js');
-const axios = require('axios');
+const axios = require('axios'); // Asegúrate de tener axios en tu package.json
 
-const client = new Client({ 
+const client = new Client({
     intents: [
-        GatewayIntentBits.Guilds, 
-        GatewayIntentBits.GuildMessages, 
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMessages,
         GatewayIntentBits.MessageContent
-    ] 
+    ]
 });
 
-// --- CONFIGURACIÓN ---
+// --- CONFIGURACIÓN SEGURA PARA RENDER ---
 const TOKEN = process.env.TOKEN;
-const API_KEY = '123456'; 
+const API_KEY = process.env.API_KEY || '123456';
 const BASE_URL_PHP = 'https://granturismols.byethost9.com/api_bot.php';
 
+// Configuración para engañar al firewall de ByetHost
 const axiosConfig = {
-    headers: { 
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36'
+    headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'application/json'
     }
 };
 
-client.on('ready', () => {
+client.once('ready', () => {
     console.log(`✅ Bot conectado como ${client.user.tag}`);
 });
 
 client.on('messageCreate', async (message) => {
     if (message.author.bot) return;
 
-    // COMANDO: !tabla
+    // COMANDO !tabla
     if (message.content === '!tabla') {
         try {
-            const urlConProxy = `https://api.allorigins.win/raw?url=${encodeURIComponent(`${BASE_URL_PHP}?key=${API_KEY}&action=get_top`)}`;
-            const response = await axios.get(urlConProxy, axiosConfig);
+            const response = await axios.get(`${BASE_URL_PHP}?action=get_tabla&api_key=${API_KEY}`, axiosConfig);
             const data = response.data;
 
-            const embed = new EmbedBuilder()
-                .setTitle('🏆 Clasificación General - Temporada 5')
-                .setColor('#00eaff')
-                .setTimestamp()
-                .setFooter({ text: 'Gran Turismo Latam Series' });
+            if (data.status === 'success' && data.data.length > 0) {
+                const embed = new EmbedBuilder()
+                    .setTitle('🏆 Clasificación GT Latam Series - Temporada 5')
+                    .setColor('#FF0000')
+                    .setTimestamp();
 
-            if (!Array.isArray(data) || data.length === 0) {
-                embed.setDescription("No hay datos disponibles o el servidor está saturado.");
-            } else {
-                data.forEach((p, i) => {
-                    embed.addFields({ 
-                        name: `${i+1}. ${p.piloto}`, 
-                        value: `🏎️ ${p.equipo} | **${p.total} Pts**`, 
-                        inline: false 
-                    });
+                let descripcion = "";
+                data.data.forEach((piloto, index) => {
+                    descripcion += `**${index + 1}.** ${piloto.nombre} - ${piloto.puntos} pts\n`;
                 });
+
+                embed.setDescription(descripcion);
+                message.reply({ embeds: [embed] });
+            } else {
+                message.reply('❌ No hay datos disponibles en la tabla de la liga.');
             }
-            message.channel.send({ embeds: [embed] });
-        } catch (e) {
-            message.reply('❌ Error al conectar con la base de datos.');
+        } catch (error) {
+            console.error('Error en !tabla:', error);
+            message.reply('⚠️ Error al conectar con el servidor de la liga.');
         }
     }
 
-    // COMANDO: !perfil [Nombre]
+    // COMANDO !perfil
     if (message.content.startsWith('!perfil ')) {
-        const nombrePiloto = message.content.replace('!perfil ', '').trim();
+        const nombrePiloto = message.content.split(' ')[1];
         try {
-            const urlFinalPHP = `${BASE_URL_PHP}?key=${API_KEY}&action=get_perfil&nombre=${encodeURIComponent(nombrePiloto)}`;
-            const urlConProxy = `https://api.allorigins.win/raw?url=${encodeURIComponent(urlFinalPHP)}`;
-            
-            const response = await axios.get(urlConProxy, axiosConfig);
-            const p = response.data;
+            const response = await axios.get(`${BASE_URL_PHP}?action=get_piloto&nombre=${nombrePiloto}&api_key=${API_KEY}`, axiosConfig);
+            const data = response.data;
 
-            if (p.error) return message.reply(`❌ ${p.error}`);
+            if (data.status === 'success') {
+                const p = data.data;
+                const embed = new EmbedBuilder()
+                    .setTitle(`🏎️ Perfil de Piloto: ${p.nombre}`)
+                    .addFields(
+                        { name: 'Puntos', value: `${p.puntos}`, inline: true },
+                        { name: 'Victorias', value: `${p.victorias}`, inline: true },
+                        { name: 'Podios', value: `${p.podios}`, inline: true }
+                    )
+                    .setColor('#0099ff');
 
-            const embed = new EmbedBuilder()
-                .setTitle(`👤 Ficha de Piloto: ${p.nickname}`)
-                .setColor('#ffd700')
-                .addFields(
-                    { name: 'Nombre Real', value: `${p.nombre} ${p.apellido}`, inline: true },
-                    { name: 'Dorsal', value: `#${p.numero}`, inline: true },
-                    { name: 'Equipo', value: p.equipo, inline: false },
-                    { name: 'Nacionalidad', value: p.nacionalidad, inline: true }
-                );
-
-            message.channel.send({ embeds: [embed] });
-        } catch (e) {
-            message.reply('❌ Piloto no encontrado o error de conexión.');
+                message.reply({ embeds: [embed] });
+            } else {
+                message.reply(`❌ No se encontró al piloto: ${nombrePiloto}`);
+            }
+        } catch (error) {
+            console.error('Error en !perfil:', error);
+            message.reply('⚠️ Error al buscar los datos del piloto.');
         }
     }
 });
 
-
 client.login(TOKEN);
-
