@@ -11,7 +11,7 @@ const client = new Client({
 });
 
 // --- CONFIGURACIÓN ---
-const TOKEN = 'MTQxMDgwOTYwMzQ0ODYzNTQ5Nw.GnnfyE.ogIC_DCZpajucVs0q4sg0DLPHOEeOXc5KdpjsM';
+const TOKEN = process.env.TOKEN;
 const API_KEY = '123456'; 
 const BASE_URL_PHP = 'http://granturismols.byethost9.com/api_bot.php';
 
@@ -86,5 +86,6 @@ client.on('messageCreate', async (message) => {
         }
     }
 });
+
 
 client.login(TOKEN);
